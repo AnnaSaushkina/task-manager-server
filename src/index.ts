@@ -6,7 +6,7 @@ const app = express();
 const PORT = 3000;
 
 app.use(cors({ origin: "*" }));
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
 app.use("/tasks", tasksRouter);
 
 app.get("/", (req, res) => {

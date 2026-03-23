@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon --exec ts-node src/index.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "deploy": "git add . && git commit -m 'update' && git push && ssh root@твой_IP \"cd ~/task-manager-server && git pull && pnpm build && pm2 restart task-manager\""
   },
   "keywords": [],
   "author": "",
