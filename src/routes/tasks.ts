@@ -3,7 +3,7 @@ import db from "../db";
 
 const router = Router();
 
-// Нормализуем задачу — ticket_number → ticketNumber
+// Нормализуем задачу — snake_case → camelCase
 const normalize = (task: any) => ({
   ...task,
   completed: task.completed === 1,
@@ -11,10 +11,13 @@ const normalize = (task: any) => ({
   ticket_number: undefined,
   status: task.status ?? undefined,
   screenshots: task.screenshots ? JSON.parse(task.screenshots) : [],
+  history: task.history ? JSON.parse(task.history) : [],
+  completedAt: task.completed_at ?? undefined,
+  completed_at: undefined,
 });
 
 // Получить все задачи
-router.get("/", (req, res) => {
+router.get("/", (_req, res) => {
   const tasks = db.prepare("SELECT * FROM tasks").all();
   res.json(tasks.map(normalize));
 });
@@ -31,13 +34,13 @@ router.post("/", (req, res) => {
     assignee,
     screenshots,
     status,
+    history,
+    completedAt,
   } = req.body;
 
   db.prepare(
-    `
-    INSERT INTO tasks (id, title, description, ticket_number, deadline, priority, assignee, screenshots, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `,
+    `INSERT INTO tasks (id, title, description, ticket_number, deadline, priority, assignee, screenshots, status, history, completed_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     id,
     title,
@@ -48,6 +51,8 @@ router.post("/", (req, res) => {
     assignee ?? null,
     screenshots ? JSON.stringify(screenshots) : null,
     status ?? null,
+    history ? JSON.stringify(history) : null,
+    completedAt ?? null,
   );
 
   res.json({
@@ -61,6 +66,8 @@ router.post("/", (req, res) => {
     assignee,
     screenshots,
     status,
+    history: history ?? [],
+    completedAt,
   });
 });
 
@@ -70,15 +77,20 @@ router.delete("/:id", (req, res) => {
   res.json({ ok: true });
 });
 
-// Переключить статус
+// Переключить выполнение
 router.patch("/:id/toggle", (req, res) => {
-  db.prepare("UPDATE tasks SET completed = NOT completed WHERE id = ?").run(
-    req.params.id,
-  );
-  const task = db
-    .prepare("SELECT * FROM tasks WHERE id = ?")
-    .get(req.params.id);
-  res.json(normalize(task));
+  const task = db.prepare("SELECT * FROM tasks WHERE id = ?").get(req.params.id) as any;
+  if (!task) return res.status(404).json({ error: "Not found" });
+
+  const completing = task.completed === 0;
+  const completedAt = completing ? new Date().toISOString() : null;
+
+  db.prepare(
+    "UPDATE tasks SET completed = ?, completed_at = ? WHERE id = ?",
+  ).run(completing ? 1 : 0, completedAt, req.params.id);
+
+  const updated = db.prepare("SELECT * FROM tasks WHERE id = ?").get(req.params.id);
+  res.json(normalize(updated));
 });
 
 // Обновить задачу
@@ -92,11 +104,13 @@ router.put("/:id", (req, res) => {
     assignee,
     screenshots,
     status,
+    history,
+    completedAt,
+    completed,
   } = req.body;
 
   db.prepare(
-    `
-    UPDATE tasks SET
+    `UPDATE tasks SET
       title = ?,
       description = ?,
       ticket_number = ?,
@@ -104,9 +118,11 @@ router.put("/:id", (req, res) => {
       priority = ?,
       assignee = ?,
       screenshots = ?,
-      status = ?
-    WHERE id = ?
-  `,
+      status = ?,
+      history = ?,
+      completed_at = ?,
+      completed = ?
+    WHERE id = ?`,
   ).run(
     title,
     description ?? null,
@@ -116,12 +132,13 @@ router.put("/:id", (req, res) => {
     assignee ?? null,
     screenshots ? JSON.stringify(screenshots) : null,
     status ?? null,
+    history ? JSON.stringify(history) : null,
+    completedAt ?? null,
+    completed ? 1 : 0,
     req.params.id,
   );
 
-  const task = db
-    .prepare("SELECT * FROM tasks WHERE id = ?")
-    .get(req.params.id);
+  const task = db.prepare("SELECT * FROM tasks WHERE id = ?").get(req.params.id);
   res.json(normalize(task));
 });
 

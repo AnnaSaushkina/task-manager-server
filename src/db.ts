@@ -14,14 +14,22 @@ db.exec(`
     priority TEXT,
     assignee TEXT,
     screenshots TEXT,
-    status TEXT
+    status TEXT,
+    history TEXT,
+    completed_at TEXT
   )
 `);
 
-// Миграция: добавить колонку status если её нет (для существующих БД)
+// Миграции для существующих БД
 const columns = db.pragma("table_info(tasks)") as { name: string }[];
 if (!columns.some((c) => c.name === "status")) {
   db.exec("ALTER TABLE tasks ADD COLUMN status TEXT");
+}
+if (!columns.some((c) => c.name === "history")) {
+  db.exec("ALTER TABLE tasks ADD COLUMN history TEXT");
+}
+if (!columns.some((c) => c.name === "completed_at")) {
+  db.exec("ALTER TABLE tasks ADD COLUMN completed_at TEXT");
 }
 
 export default db;
