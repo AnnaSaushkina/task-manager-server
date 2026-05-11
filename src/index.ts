@@ -15,6 +15,10 @@ export const io = new Server(httpServer, {
 
 app.use(cors({ origin: "*" }));
 app.use(express.json({ limit: "10mb" }));
+app.use((req, _res, next) => {
+  console.log(`${req.method} ${req.path}`);
+  next();
+});
 app.use("/tasks", createTasksRouter(io));
 
 app.get("/", (_req, res) => {
