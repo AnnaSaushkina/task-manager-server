@@ -5,12 +5,12 @@ import db from "../db";
 
 const normalize = (task: any) => ({
   ...task,
-  completed: task.completed,
+  completed: Boolean(task.completed),
   ticketNumber: task.ticket_number ?? undefined,
   ticket_number: undefined,
   status: task.status ?? undefined,
-  screenshots: task.screenshots ?? [],
-  history: task.history ?? [],
+  screenshots: typeof task.screenshots === "string" ? JSON.parse(task.screenshots) : (task.screenshots ?? []),
+  history: typeof task.history === "string" ? JSON.parse(task.history) : (task.history ?? []),
   completedAt: task.completed_at ?? undefined,
   completed_at: undefined,
 });
