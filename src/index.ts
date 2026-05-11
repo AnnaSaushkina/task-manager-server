@@ -7,7 +7,7 @@ import { createTasksRouter } from "./routes/tasks";
 
 const app = express();
 const httpServer = createServer(app);
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 
 export const io = new Server(httpServer, {
   cors: { origin: "*" },
