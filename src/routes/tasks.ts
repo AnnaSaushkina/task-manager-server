@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { randomUUID } from "crypto";
 import type { Server } from "socket.io";
 import db from "../db";
 
@@ -26,9 +27,10 @@ export function createTasksRouter(io: Server) {
 
   router.post("/", async (req, res) => {
     const {
-      id, title, description, ticketNumber, deadline,
+      id: rawId, title, description, ticketNumber, deadline,
       priority, assignee, screenshots, status, history, completedAt,
     } = req.body;
+    const id = rawId || randomUUID();
 
     await db.query(
       `INSERT INTO tasks (id, title, description, ticket_number, deadline, priority, assignee, screenshots, status, history, completed_at)
