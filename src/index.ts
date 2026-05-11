@@ -1,18 +1,34 @@
+import { createServer } from "http";
 import express from "express";
 import cors from "cors";
-import tasksRouter from "./routes/tasks";
+import { Server } from "socket.io";
+import { initDb } from "./db";
+import { createTasksRouter } from "./routes/tasks";
 
 const app = express();
+const httpServer = createServer(app);
 const PORT = 3000;
+
+export const io = new Server(httpServer, {
+  cors: { origin: "*" },
+});
 
 app.use(cors({ origin: "*" }));
 app.use(express.json({ limit: "10mb" }));
-app.use("/tasks", tasksRouter);
+app.use("/tasks", createTasksRouter(io));
 
-app.get("/", (req, res) => {
+app.get("/", (_req, res) => {
   res.send("Сервер работает");
 });
 
-app.listen(PORT, () => {
-  console.log(`Сервер запущен на http://localhost:${PORT}`);
+async function start() {
+  await initDb();
+  httpServer.listen(PORT, () => {
+    console.log(`Сервер запущен на http://localhost:${PORT}`);
+  });
+}
+
+start().catch((err) => {
+  console.error("Ошибка запуска сервера:", err);
+  process.exit(1);
 });
